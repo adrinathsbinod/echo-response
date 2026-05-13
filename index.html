@@ -1,0 +1,2644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echo Response Command Center v1.1</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+/* ECHO-RESPONSE // DESIGN SYSTEM */
+:root {
+    --bg-dark: #060A12;
+    --bg-panel: rgba(10, 16, 30, 0.92);
+    --bg-card: rgba(14, 22, 40, 0.95);
+    --border-blue: rgba(28, 155, 230, 0.3);
+    --border-subtle: rgba(255,255,255,0.06);
+    --text-primary: #E0E6ED;
+    --text-muted: #7B8CA6;
+    
+    --color-red: #FF4757;
+    --color-green: #00E5A0;
+    --color-amber: #FFC312;
+    --color-blue: #1E9CF2;
+    --color-cyan: #00E5FF;
+    
+    --font-heading: 'Barlow Condensed', sans-serif;
+    --font-data: 'Share Tech Mono', monospace;
+    
+    --glow-blue: 0 0 15px rgba(30, 156, 242, 0.25);
+    --glow-red: 0 0 20px rgba(255, 71, 87, 0.4);
+    --glow-green: 0 0 15px rgba(0, 229, 160, 0.3);
+    --radius: 8px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-dark);
+    background-image: radial-gradient(ellipse at 20% 50%, rgba(30,156,242,0.04) 0%, transparent 50%),
+                      radial-gradient(ellipse at 80% 20%, rgba(0,229,160,0.03) 0%, transparent 40%);
+    color: var(--text-primary);
+    font-family: var(--font-data);
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Scanlines Effect */
+.scanlines {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: linear-gradient(
+        to bottom,
+        rgba(255,255,255,0),
+        rgba(255,255,255,0) 50%,
+        rgba(0,0,0,0.2) 50%,
+        rgba(0,0,0,0.2)
+    );
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+}
+
+/* Background Grid Overlay */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background-image: 
+        linear-gradient(rgba(28, 155, 230, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(28, 155, 230, 0.05) 1px, transparent 1px);
+    background-size: 30px 30px;
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* Typography */
+h1, h2, h3 {
+    font-family: var(--font-heading);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+h2 {
+    font-size: 1.1rem;
+    color: var(--color-blue);
+    border-bottom: 1px solid var(--border-blue);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: 2px;
+}
+
+/* Layout */
+.top-bar {
+    background: linear-gradient(180deg, rgba(10,16,30,0.98) 0%, rgba(10,16,30,0.92) 100%);
+    border-bottom: 1px solid var(--border-blue);
+    box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+    z-index: 100;
+    backdrop-filter: blur(10px);
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--color-blue);
+}
+
+.logo h1 {
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.nav-tabs {
+    display: flex;
+    gap: 5px;
+}
+
+.nav-btn {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid transparent;
+    padding: 8px 16px;
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+}
+
+.nav-btn:hover {
+    color: var(--color-blue);
+    border-bottom: 2px solid var(--color-blue);
+}
+
+.nav-btn.active {
+    color: #fff;
+    background: linear-gradient(180deg, rgba(30,156,242,0.15) 0%, rgba(30,156,242,0.05) 100%);
+    border: 1px solid var(--border-blue);
+    border-top: 2px solid var(--color-blue);
+    box-shadow: inset 0 1px 15px rgba(30,156,242,0.1);
+}
+
+.live-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-red);
+    font-weight: bold;
+    font-size: 1.1rem;
+    font-family: var(--font-heading);
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    background-color: var(--color-red);
+    border-radius: 50%;
+    animation: blink 1s infinite alternate;
+}
+
+@keyframes blink {
+    from { opacity: 1; box-shadow: 0 0 8px var(--color-red); }
+    to { opacity: 0.3; box-shadow: none; }
+}
+
+.event-banner {
+    background: linear-gradient(90deg, rgba(255,195,18,0.08) 0%, rgba(255,195,18,0.03) 50%, rgba(255,195,18,0.08) 100%);
+    border-top: 1px solid rgba(255,195,18,0.3);
+    border-bottom: 1px solid rgba(255,195,18,0.3);
+    padding: 8px 20px;
+    color: var(--color-amber);
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+}
+
+.warning-icon {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.content-area {
+    flex: 1;
+    position: relative;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.page {
+    display: none;
+    height: 100%;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.page.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Reusable Components */
+.panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-blue);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03);
+    padding: 20px;
+    border-radius: var(--radius);
+    backdrop-filter: blur(12px);
+}
+
+.full-height {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Page 1: Overview */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.kpi-card {
+    background: linear-gradient(135deg, var(--bg-panel) 0%, rgba(14,22,40,0.9) 100%);
+    border: 1px solid var(--border-blue);
+    padding: 18px 20px;
+    border-left: 4px solid var(--color-blue);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+
+.kpi-card.alert {
+    border-left-color: var(--color-red);
+    box-shadow: var(--glow-red);
+    background: linear-gradient(135deg, rgba(255,71,87,0.06) 0%, var(--bg-panel) 100%);
+}
+
+.kpi-label {
+    font-family: var(--font-heading);
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+.kpi-value {
+    font-size: 2rem;
+    color: #fff;
+    margin-top: 5px;
+}
+
+.kpi-value.highlight { color: var(--color-green); }
+.kpi-value.danger { color: var(--color-red); }
+
+.overview-main {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+    height: calc(100% - 100px);
+}
+
+.timeline-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.timeline-feed {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+::-webkit-scrollbar-thumb { background: var(--color-blue); border-radius: 3px; }
+
+.log-entry {
+    background: rgba(255,255,255,0.02);
+    border-left: 3px solid var(--text-muted);
+    padding: 12px 14px;
+    font-size: 0.85rem;
+    display: flex;
+    gap: 15px;
+    animation: slideInLeft 0.3s ease-out;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    transition: background 0.2s;
+}
+
+.log-entry:hover { background: rgba(255,255,255,0.04); }
+.log-entry.critical { border-left-color: var(--color-red); background: rgba(255, 71, 87, 0.04); }
+.log-entry.success { border-left-color: var(--color-green); background: rgba(0,229,160,0.03); }
+.log-entry.warning { border-left-color: var(--color-amber); background: rgba(255,195,18,0.03); }
+
+.log-time { color: var(--color-blue); min-width: 80px; }
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.chart-container {
+    flex: 1;
+    position: relative;
+    min-height: 200px;
+}
+
+/* Page 2: Mesh Map */
+.map-container {
+    height: 100%;
+    padding: 0; /* Leaflet needs full width */
+    position: relative;
+}
+
+#leaflet-map {
+    width: 100%;
+    height: 100%;
+    background-color: #0b111e;
+    z-index: 1;
+}
+
+.map-legend {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-blue);
+    padding: 15px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.legend-item { display: flex; align-items: center; gap: 8px; }
+.color-box { width: 12px; height: 12px; display: inline-block; border-radius: 50%; }
+.color-box.online { background: var(--color-green); }
+.color-box.degraded { background: var(--color-amber); }
+.color-box.offline { background: var(--color-red); }
+.color-box.danger-zone { background: rgba(255, 59, 59, 0.3); border: 1px solid var(--color-red); border-radius: 0; }
+.color-box.safe-corridor { background: transparent; border-top: 2px dashed var(--color-green); height: 0; width: 15px; border-radius: 0; }
+.blue-icon { color: var(--color-blue); }
+
+/* Page 3: Node Intel */
+.table-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.filters {
+    display: flex;
+    gap: 10px;
+}
+
+.filter-btn {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    padding: 6px 16px;
+    cursor: pointer;
+    font-family: var(--font-data);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+}
+
+.filter-btn.active, .filter-btn:hover {
+    background: rgba(30,156,242,0.15);
+    color: var(--color-blue);
+    border-color: var(--border-blue);
+}
+
+.search-input {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border-subtle);
+    color: #fff;
+    padding: 6px 14px;
+    font-family: var(--font-data);
+    width: 200px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    transition: border-color 0.2s;
+}
+.search-input:focus { outline: none; border-color: var(--color-blue); }
+
+.table-wrapper {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.data-table th {
+    position: sticky;
+    top: 0;
+    background: rgba(8,14,26,0.98);
+    padding: 14px 12px;
+    color: var(--color-blue);
+    font-family: var(--font-heading);
+    border-bottom: 2px solid var(--border-blue);
+    z-index: 10;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.data-table td {
+    padding: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    font-size: 0.85rem;
+}
+
+.data-table tbody tr {
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.data-table tbody tr:hover { background: rgba(28, 155, 230, 0.1); }
+.data-table tbody tr.row-critical {
+    background: rgba(255, 59, 59, 0.05);
+    box-shadow: inset 2px 0 0 var(--color-red);
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: var(--font-heading);
+}
+
+.bg-online { background: rgba(0, 229, 160, 0.1); color: var(--color-green); border: 1px solid rgba(0,229,160,0.3); }
+.bg-degraded { background: rgba(255, 195, 18, 0.1); color: var(--color-amber); border: 1px solid rgba(255,195,18,0.3); }
+.bg-offline { background: rgba(255, 71, 87, 0.1); color: var(--color-red); border: 1px solid rgba(255,71,87,0.3); }
+
+/* Expanded row styling */
+.expanded-row td { padding: 0; border: none; }
+.sparkline-container {
+    background: rgba(0,0,0,0.3);
+    padding: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    height: 100px;
+    display: none;
+}
+.expanded-row .sparkline-container { display: block; }
+
+/* Page 4: Survivor Log */
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+.danger-text { color: var(--color-red); font-weight: bold; }
+
+.cards-container {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding-right: 10px;
+}
+
+.survivor-card {
+    background: linear-gradient(135deg, rgba(14,22,40,0.9) 0%, rgba(10,16,30,0.95) 100%);
+    border: 1px solid var(--border-subtle);
+    padding: 16px 18px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 20px;
+    align-items: center;
+    animation: slideDown 0.4s ease-out;
+    border-radius: var(--radius);
+    transition: border-color 0.2s, transform 0.2s;
+}
+.survivor-card:hover { border-color: var(--border-blue); transform: translateX(3px); }
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.survivor-card.priority-high {
+    border-color: rgba(255,71,87,0.4);
+    box-shadow: var(--glow-red);
+    background: linear-gradient(135deg, rgba(255,71,87,0.06) 0%, rgba(10,16,30,0.95) 100%);
+}
+
+.survivor-card.priority-medium {
+    border-color: rgba(255,195,18,0.3);
+}
+
+.card-icon {
+    font-size: 1.6rem;
+    color: var(--color-blue);
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: rgba(30,156,242,0.08);
+    border: 1px solid var(--border-blue);
+}
+.survivor-card.priority-high .card-icon { color: var(--color-red); background: rgba(255,71,87,0.08); border-color: rgba(255,71,87,0.3); }
+
+.card-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.detail-group { display: flex; flex-direction: column; }
+.detail-label { font-size: 0.8rem; color: var(--text-muted); }
+.detail-value { font-size: 1.1rem; }
+
+/* Page 5: Threat Analysis */
+.threat-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    height: 100%;
+}
+
+.canvas-wrapper {
+    height: calc(100% - 40px);
+    width: 100%;
+}
+
+.heatmap-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.heatmap-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(10, 1fr);
+    gap: 2px;
+    aspect-ratio: 1;
+    width: 60%;
+    margin: 0 auto;
+    background: #000;
+    border: 1px solid var(--border-blue);
+    padding: 2px;
+}
+
+.heatmap-cell {
+    background: var(--color-green);
+    opacity: 0.8;
+    transition: background 1s, opacity 1s;
+    min-height: 26px;
+}
+
+.threat-bars {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    flex: 1;
+}
+
+.bar-chart-container h3 {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.threat-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.risk-card,
+.service-metric,
+.route-card {
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 14px;
+}
+
+.risk-card {
+    border-top: 3px solid var(--color-blue);
+}
+
+.risk-card.severe { border-top-color: var(--color-red); }
+.risk-card.elevated { border-top-color: var(--color-amber); }
+.risk-card.stable { border-top-color: var(--color-green); }
+
+.risk-label,
+.service-label,
+.route-label {
+    color: var(--text-muted);
+    font-family: var(--font-heading);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.risk-value,
+.service-value {
+    margin-top: 8px;
+    color: #fff;
+    font-size: 1.55rem;
+    font-weight: 700;
+}
+
+.risk-note,
+.service-note,
+.route-note {
+    margin-top: 6px;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+.threat-main-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
+    gap: 18px;
+    min-height: 0;
+}
+
+.zone-priority-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.zone-row {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 11px 12px;
+    background: rgba(255,255,255,0.035);
+    border-left: 3px solid var(--color-amber);
+    border-radius: 8px;
+}
+
+.zone-row.critical { border-left-color: var(--color-red); }
+.zone-row.monitor { border-left-color: var(--color-blue); }
+
+.zone-id {
+    color: #fff;
+    font-weight: 700;
+}
+
+.zone-detail {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.zone-score {
+    color: var(--color-amber);
+    font-weight: 700;
+}
+
+.zone-row.critical .zone-score { color: var(--color-red); }
+
+.heatmap-grid.systematic {
+    width: min(360px, 92%);
+    min-height: 320px;
+    display: grid;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    grid-template-rows: repeat(10, minmax(0, 1fr));
+    gap: 3px;
+    background:
+        linear-gradient(rgba(255,255,255,0.08), rgba(255,255,255,0.08)),
+        repeating-linear-gradient(90deg, transparent 0 9.3%, rgba(255,255,255,0.14) 9.3% 10%),
+        repeating-linear-gradient(0deg, transparent 0 9.3%, rgba(255,255,255,0.14) 9.3% 10%),
+        radial-gradient(circle at 48% 36%, rgba(255,95,114,0.78) 0 13%, transparent 14%),
+        radial-gradient(circle at 58% 50%, rgba(247,189,69,0.68) 0 16%, transparent 17%),
+        radial-gradient(circle at 18% 18%, rgba(79,179,232,0.48) 0 13%, transparent 14%),
+        rgba(16, 29, 40, 0.95);
+    background-blend-mode: normal;
+    padding: 8px;
+}
+
+.heatmap-cell {
+    border-radius: 3px;
+    min-width: 0;
+    min-height: 0;
+    display: grid;
+    place-items: center;
+    color: rgba(255,255,255,0.66);
+    font-size: 0.5rem;
+    font-weight: 700;
+}
+
+.heatmap-cell::after {
+    content: attr(data-zone);
+    color: rgba(255,255,255,0.68);
+}
+
+.heatmap-cell.risk-critical {
+    background: #ff5f72;
+    opacity: 0.92;
+}
+
+.heatmap-cell.risk-elevated {
+    background: #f7bd45;
+    opacity: 0.86;
+}
+
+.heatmap-cell.risk-watch {
+    background: #4fb3e8;
+    opacity: 0.58;
+}
+
+.heatmap-cell.risk-normal {
+    background: #2ee6a6;
+    opacity: 0.5;
+}
+
+.heatmap-grid .heatmap-cell {
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+
+.node-hw-marker {
+    align-items: center;
+    border-radius: 8px;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.15), 0 10px 24px rgba(0,0,0,0.45);
+    color: #061018;
+    display: flex;
+    font-family: var(--font-heading);
+    font-size: 11px;
+    font-weight: 700;
+    height: 28px;
+    justify-content: center;
+    letter-spacing: 0.05em;
+    width: 54px;
+}
+
+.node-hw-marker.node-one {
+    background: #47d8cf;
+}
+
+.node-hw-marker.node-two {
+    background: #f7bd45;
+}
+
+.system-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.service-metric {
+    min-height: 118px;
+    position: relative;
+}
+
+.service-metric::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: var(--color-green);
+    border-radius: 8px 8px 0 0;
+}
+
+.service-metric.warning::before { background: var(--color-amber); }
+.service-metric.danger::before { background: var(--color-red); }
+
+.status-middle.systematic {
+    min-height: 230px;
+}
+
+.route-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.route-card {
+    display: grid;
+    gap: 10px;
+}
+
+.route-state {
+    display: inline-flex;
+    width: fit-content;
+    padding: 4px 9px;
+    border-radius: 8px;
+    color: var(--color-green);
+    border: 1px solid rgba(46,230,166,0.26);
+    background: rgba(46,230,166,0.08);
+    font-family: var(--font-heading);
+    font-size: 0.76rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.route-state.warning {
+    color: var(--color-amber);
+    border-color: rgba(247,189,69,0.28);
+    background: rgba(247,189,69,0.08);
+}
+
+.status-bottom.systematic {
+    grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.2fr);
+    height: 230px;
+}
+
+.availability-chart {
+    display: grid;
+    gap: 13px;
+    padding-top: 4px;
+}
+
+.availability-row {
+    display: grid;
+    grid-template-columns: 150px 1fr 70px;
+    gap: 14px;
+    align-items: center;
+}
+
+.availability-name {
+    color: #fff;
+    font-size: 0.86rem;
+}
+
+.availability-track {
+    height: 16px;
+    display: flex;
+    overflow: hidden;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.availability-segment.healthy { background: var(--color-green); }
+.availability-segment.degraded { background: var(--color-amber); }
+.availability-segment.offline { background: var(--color-red); }
+
+.availability-score {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    text-align: right;
+}
+
+/* Page 6: System Status */
+#system-status {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.status-top {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.status-indicator i { font-size: 2.5rem; }
+.status-indicator .label { font-family: var(--font-heading); color: var(--text-muted); }
+.status-indicator .state { font-size: 1.5rem; font-weight: bold; }
+
+.status-indicator.ok { border-color: var(--color-green); }
+.status-indicator.ok i, .status-indicator.ok .state { color: var(--color-green); }
+
+.status-indicator.warning { border-color: var(--color-amber); }
+.status-indicator.warning i, .status-indicator.warning .state { color: var(--color-amber); }
+
+.status-middle { flex: 1; min-height: 250px; }
+.gantt-container { height: calc(100% - 40px); position: relative;}
+
+.status-bottom {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+    height: 200px;
+}
+
+.fed-stats { display: flex; flex-direction: column; gap: 15px; margin-top: 15px; }
+.fed-stat { display: flex; justify-content: space-between; font-size: 1.1rem; }
+.fed-label { color: var(--text-muted); }
+
+.progress-bar-bg {
+    width: 100%;
+    height: 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: var(--color-blue);
+    box-shadow: 0 0 10px var(--color-blue);
+    transition: width 0.5s;
+}
+
+.sys-log {
+    height: calc(100% - 40px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 0.85rem;
+}
+
+.sys-log-entry {
+    padding: 5px 0;
+    border-bottom: 1px dashed rgba(255,255,255,0.1);
+    display: flex;
+    gap: 10px;
+}
+.sys-log-entry .time { color: var(--text-muted); }
+
+/* Global Chart Tooltip styling */
+#chartjs-tooltip {
+    background: rgba(0,0,0,0.8);
+    border: 1px solid var(--color-blue);
+    color: white;
+    font-family: var(--font-data);
+}
+
+/* === HARDWARE NODES PAGE === */
+.hw-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; height: 100%; }
+.hw-node-panel { display: flex; flex-direction: column; gap: 16px; overflow-y: auto; padding-right: 4px; }
+.hw-node-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border-blue); margin-bottom: 4px; }
+.hw-node-header .hw-icon { font-size: 1.8rem; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; border-radius: 14px; border: 2px solid; background: rgba(28,155,230,0.06); flex-shrink: 0; }
+.hw-node-header .hw-label { font-family: var(--font-heading); font-size: 1.3rem; color: #fff; letter-spacing: 2px; }
+.hw-node-header .hw-id { color: var(--text-muted); font-size: 0.78rem; margin-top: 2px; }
+.hw-conn-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; font-family: var(--font-heading); }
+.hw-conn-badge.connected { background: rgba(0,229,160,0.1); color: var(--color-green); border: 1px solid rgba(0,229,160,0.3); }
+.hw-conn-badge .hw-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-green); animation: blink 1s infinite alternate; box-shadow: var(--glow-green); }
+
+.hw-section-title { color: var(--color-blue); font-family: var(--font-heading); font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; margin: 0; padding: 8px 0 4px; border-bottom: 1px dashed rgba(28,155,230,0.15); }
+
+.hw-sensors-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hw-sensor-card { background: linear-gradient(145deg, rgba(10,16,30,0.95) 0%, rgba(6,10,18,0.98) 100%); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 5px; transition: all 0.3s ease; position: relative; overflow: hidden; }
+.hw-sensor-card:hover { border-color: rgba(30,156,242,0.3); box-shadow: 0 4px 20px rgba(0,0,0,0.3); transform: translateY(-1px); }
+.hw-sensor-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(30,156,242,0.3), transparent); }
+.hw-sensor-card .sensor-name { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-family: var(--font-heading); letter-spacing: 2px; }
+.hw-sensor-card .sensor-val { font-size: 1.7rem; color: #fff; font-weight: 700; line-height: 1.2; }
+.hw-sensor-card .sensor-unit { font-size: 0.75rem; color: var(--text-muted); margin-left: 3px; font-weight: 400; }
+.hw-sensor-card .sensor-delta { font-size: 0.7rem; display: flex; align-items: center; gap: 4px; }
+.hw-sensor-card .sensor-delta.up { color: var(--color-red); }
+.hw-sensor-card .sensor-delta.down { color: var(--color-green); }
+.hw-sensor-card .sensor-delta.stable { color: var(--text-muted); }
+.hw-sensor-card.warning { border-left: 3px solid var(--color-amber); background: linear-gradient(145deg, rgba(255,195,18,0.04) 0%, rgba(6,10,18,0.98) 100%); }
+.hw-sensor-card.critical { border-left: 3px solid var(--color-red); box-shadow: var(--glow-red); background: linear-gradient(145deg, rgba(255,71,87,0.06) 0%, rgba(6,10,18,0.98) 100%); }
+
+.hw-chart-box { flex: 1; min-height: 150px; background: rgba(6,10,18,0.6); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--radius); padding: 14px; }
+.hw-chart-box h3 { font-family: var(--font-heading); font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
+
+.hw-component-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px; }
+.hw-component { display: flex; justify-content: space-between; align-items: center; padding: 7px 12px; background: rgba(0,0,0,0.2); border-radius: 6px; border-left: 2px solid rgba(30,156,242,0.3); font-size: 0.78rem; transition: background 0.2s; }
+.hw-component:hover { background: rgba(30,156,242,0.06); }
+.hw-component .comp-name { color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+.hw-component .comp-name i { color: var(--color-blue); width: 14px; text-align: center; }
+.hw-component .comp-status { color: var(--color-green); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; }
+
+.hw-topology { display: flex; align-items: center; justify-content: center; gap: 0; padding: 12px 0; }
+.hw-topo-node { width: 65px; height: 65px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-family: var(--font-heading); text-transform: uppercase; text-align: center; line-height: 1.2; border: 2px solid; letter-spacing: 1px; transition: transform 0.2s; }
+.hw-topo-node:hover { transform: scale(1.1); }
+.hw-topo-node.alpha { border-color: #00E5FF; color: #00E5FF; background: rgba(0,229,255,0.06); }
+.hw-topo-node.bravo { border-color: #FF6B35; color: #FF6B35; background: rgba(255,107,53,0.06); }
+.hw-topo-node.server { border-color: var(--color-blue); color: var(--color-blue); background: rgba(30,156,242,0.06); }
+.hw-topo-line { width: 60px; height: 2px; background: linear-gradient(90deg, transparent, var(--color-blue), transparent); position: relative; }
+.hw-topo-line::after { content: ''; position: absolute; top: -2px; width: 6px; height: 6px; background: var(--color-blue); border-radius: 50%; animation: dataFlow 1.5s infinite; box-shadow: var(--glow-blue); }
+@keyframes dataFlow { 0% { left: 0; opacity: 0; } 50% { opacity: 1; } 100% { left: calc(100% - 6px); opacity: 0; } }
+
+@keyframes sensorPulse {
+    0% { box-shadow: 0 0 0 0 rgba(30,156,242,0.25); }
+    70% { box-shadow: 0 0 0 6px rgba(30,156,242,0); }
+    100% { box-shadow: 0 0 0 0 rgba(30,156,242,0); }
+}
+.hw-sensor-card.updating { animation: sensorPulse 0.5s ease-out; }
+
+/* === STRUCTURED AESTHETIC REFRESH === */
+:root {
+    --bg-dark: #071018;
+    --bg-panel: rgba(13, 22, 31, 0.86);
+    --bg-card: rgba(17, 29, 40, 0.92);
+    --border-blue: rgba(84, 181, 226, 0.22);
+    --border-subtle: rgba(222, 237, 247, 0.09);
+    --text-primary: #edf7fb;
+    --text-muted: #91a8b5;
+    --color-red: #ff5f72;
+    --color-green: #2ee6a6;
+    --color-amber: #f7bd45;
+    --color-blue: #4fb3e8;
+    --color-cyan: #47d8cf;
+    --glow-blue: 0 18px 50px rgba(43, 139, 204, 0.15);
+    --glow-red: 0 18px 50px rgba(255, 95, 114, 0.18);
+    --radius: 8px;
+}
+
+body {
+    background:
+        linear-gradient(135deg, rgba(12, 37, 52, 0.86), rgba(7, 16, 24, 0.98) 48%, rgba(21, 34, 30, 0.9)),
+        radial-gradient(circle at 15% 15%, rgba(79, 179, 232, 0.18), transparent 34%),
+        radial-gradient(circle at 90% 10%, rgba(46, 230, 166, 0.12), transparent 28%);
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+body::before {
+    opacity: 0.35;
+    background-size: 48px 48px;
+}
+
+.scanlines {
+    opacity: 0.08;
+}
+
+h1, h2, h3,
+.nav-btn,
+.kpi-label,
+.status-badge,
+.hw-section-title {
+    letter-spacing: 0.06em;
+}
+
+.top-bar {
+    background: rgba(7, 16, 24, 0.84);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 18px 50px rgba(0,0,0,0.36);
+}
+
+.header-top {
+    gap: 20px;
+    padding: 14px 24px;
+}
+
+.logo {
+    min-width: 280px;
+    gap: 14px;
+}
+
+.logo i {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    color: var(--color-cyan);
+    background: rgba(71, 216, 207, 0.11);
+    border: 1px solid rgba(71, 216, 207, 0.24);
+}
+
+.logo h1 {
+    color: #f7fbff;
+    font-size: 1.26rem;
+    line-height: 1.05;
+}
+
+.logo h1::after {
+    content: "Kochi urban rescue operations";
+    display: block;
+    margin-top: 5px;
+    color: var(--text-muted);
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    text-transform: none;
+}
+
+.nav-tabs {
+    flex: 1;
+    justify-content: center;
+    gap: 6px;
+}
+
+.nav-btn {
+    min-height: 44px;
+    padding: 8px 13px;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    color: #9fb1bf;
+}
+
+.nav-btn:hover,
+.nav-btn.active {
+    color: #ffffff;
+    border: 1px solid rgba(79, 179, 232, 0.28);
+    border-bottom-color: rgba(79, 179, 232, 0.42);
+    background: rgba(79, 179, 232, 0.11);
+    box-shadow: none;
+}
+
+.live-badge {
+    min-width: 96px;
+    justify-content: flex-end;
+    font-size: 0.88rem;
+    color: #ff7585;
+}
+
+.event-banner {
+    padding: 10px 24px;
+    background: rgba(247, 189, 69, 0.09);
+    border-color: rgba(247, 189, 69, 0.19);
+    font-size: 0.78rem;
+}
+
+.content-area {
+    padding: 22px 24px 26px;
+}
+
+.page {
+    max-width: 1480px;
+    margin: 0 auto;
+}
+
+.page:not(.active) {
+    display: none !important;
+}
+
+.panel,
+.kpi-card,
+.survivor-card,
+.hw-sensor-card,
+.status-indicator {
+    background: linear-gradient(180deg, rgba(18, 31, 43, 0.88), rgba(9, 18, 27, 0.9));
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+}
+
+.panel {
+    padding: 22px;
+}
+
+h2 {
+    color: #dff7ff;
+    border-bottom-color: rgba(255,255,255,0.08);
+    font-size: 1rem;
+    margin-bottom: 18px;
+}
+
+.kpi-grid {
+    grid-template-columns: repeat(5, minmax(150px, 1fr));
+    gap: 16px;
+}
+
+.kpi-card {
+    min-height: 104px;
+    padding: 17px 18px;
+    border-left: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.kpi-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--color-blue), transparent);
+}
+
+.kpi-card.alert::before {
+    background: linear-gradient(90deg, var(--color-red), transparent);
+}
+
+.kpi-label {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+.kpi-value {
+    margin-top: 12px;
+    font-size: 2.25rem;
+    line-height: 1;
+    letter-spacing: 0.01em;
+}
+
+.overview-main {
+    grid-template-columns: minmax(0, 1.42fr) minmax(340px, 0.78fr);
+    gap: 18px;
+    height: calc(100% - 122px);
+    min-height: 0;
+}
+
+.timeline-feed {
+    gap: 12px;
+}
+
+.log-entry {
+    border-left-width: 4px;
+    background: rgba(255,255,255,0.035);
+    padding: 14px 16px;
+    border-radius: 8px;
+}
+
+.log-time {
+    color: var(--color-cyan);
+}
+
+.timeline-container,
+.side-panel,
+.chart-container {
+    min-height: 0;
+}
+
+.chart-container {
+    min-height: 190px;
+}
+
+.chart-container canvas {
+    max-height: 220px;
+}
+
+.map-container {
+    overflow: hidden;
+}
+
+.map-legend {
+    border-radius: 8px;
+    box-shadow: 0 18px 42px rgba(0,0,0,0.32);
+}
+
+.table-controls,
+.log-header {
+    gap: 16px;
+}
+
+.table-controls h2,
+.log-header h2 {
+    margin-bottom: 0;
+    min-width: 220px;
+}
+
+.filters {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.filter-btn,
+.search-input,
+.status-badge {
+    border-radius: 8px;
+}
+
+.data-table th {
+    background: rgba(10, 20, 30, 0.98);
+}
+
+.data-table td,
+.data-table th {
+    padding: 14px;
+    white-space: nowrap;
+}
+
+.sparkline-row .sparkline-container {
+    display: block;
+}
+
+.hw-layout,
+.threat-layout,
+.status-top,
+.status-bottom {
+    gap: 18px;
+}
+
+.hw-node-header .hw-icon,
+.card-icon {
+    border-radius: 8px;
+}
+
+.hw-component,
+.sys-log-entry {
+    border-color: rgba(255,255,255,0.08);
+}
+
+.heatmap-grid {
+    border-radius: 8px;
+    overflow: hidden;
+    width: min(420px, 70%);
+}
+
+@media (max-width: 1180px) {
+    body {
+        overflow: auto;
+        min-height: 100vh;
+    }
+
+    .header-top,
+    .overview-main,
+    .hw-layout,
+    .threat-layout,
+    .threat-main-grid,
+    .status-bottom {
+        grid-template-columns: 1fr;
+    }
+
+    .header-top {
+        display: grid;
+    }
+
+    .nav-tabs {
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+
+    .kpi-grid,
+    .status-top,
+    .threat-summary-grid,
+    .system-grid,
+    .route-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .overview-main {
+        height: auto;
+    }
+}
+
+@media (max-width: 680px) {
+    .content-area,
+    .header-top,
+    .event-banner {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .logo {
+        min-width: 0;
+    }
+
+    .kpi-grid,
+    .status-top,
+    .threat-summary-grid,
+    .system-grid,
+    .route-grid,
+    .hw-sensors-grid,
+    .card-details {
+        grid-template-columns: 1fr;
+    }
+
+    .survivor-card {
+        grid-template-columns: 1fr;
+    }
+}
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+
+    <header class="top-bar">
+        <div class="header-top">
+            <div class="logo">
+                <i class="fa-solid fa-satellite-dish"></i>
+                <h1>ECHO-RESPONSE // MESH MONITOR v2.4</h1>
+            </div>
+            <nav class="nav-tabs">
+                <button class="nav-btn active" data-target="overview" onclick="switchPage('overview', this)">Overview</button>
+                <button class="nav-btn" data-target="mesh-map" onclick="switchPage('mesh-map', this)">Mesh Map</button>
+                <button class="nav-btn" data-target="node-intel" onclick="switchPage('node-intel', this)">Node Intel</button>
+                <button class="nav-btn" data-target="hardware-nodes" onclick="switchPage('hardware-nodes', this)"><i class="fa-solid fa-microchip"></i> HW Nodes</button>
+                <button class="nav-btn" data-target="survivor-log" onclick="switchPage('survivor-log', this)">Survivor Log</button>
+                <button class="nav-btn" data-target="threat-analysis" onclick="switchPage('threat-analysis', this)">Threat Analysis</button>
+                <button class="nav-btn" data-target="system-status" onclick="switchPage('system-status', this)">System Status</button>
+            </nav>
+            <div class="live-badge">
+                <span class="dot"></span> LIVE SIM
+            </div>
+        </div>
+        <div class="event-banner">
+            <i class="fa-solid fa-triangle-exclamation warning-icon"></i>
+            <span class="banner-text">ACTIVE EVENT: MAGNITUDE 6.8 SEISMIC EVENT — DISTRICT 7, KOCHI URBAN ZONE — </span>
+            <span class="timer" id="elapsed-timer">T+00:47:23 ELAPSED</span>
+        </div>
+    </header>
+
+    <main class="content-area">
+        
+        <!-- Page 1: Overview -->
+        <section id="overview" class="page active">
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">ACTIVE MESH NODES</div>
+                    <div class="kpi-value" id="kpi-nodes">142/158</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">SURVIVOR SIGNALS</div>
+                    <div class="kpi-value highlight" id="kpi-signals">37</div>
+                </div>
+                <div class="kpi-card alert">
+                    <div class="kpi-label">CRITICAL ZONES</div>
+                    <div class="kpi-value danger">4</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">MESH COVERAGE</div>
+                    <div class="kpi-value">89.2%</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">AVG NODE BATTERY</div>
+                    <div class="kpi-value" id="kpi-battery">74%</div>
+                </div>
+            </div>
+
+            <div class="overview-main">
+                <div class="timeline-container panel">
+                    <h2><i class="fa-solid fa-list"></i> LIVE EVENT TIMELINE</h2>
+                    <div class="timeline-feed" id="timeline-feed">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+                <div class="side-panel">
+                    <div class="chart-container panel">
+                        <h2>NODE HEALTH DISTRIBUTION</h2>
+                        <canvas id="nodeHealthChart"></canvas>
+                    </div>
+                    <div class="chart-container panel">
+                        <h2>SIGNAL TYPES DETECTED</h2>
+                        <canvas id="signalTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Page 2: Mesh Map -->
+        <section id="mesh-map" class="page">
+            <div class="map-container panel">
+                <div id="leaflet-map"></div>
+                <div class="map-legend">
+                    <div class="legend-item"><span class="color-box online"></span> Online</div>
+                    <div class="legend-item"><span class="color-box degraded"></span> Degraded</div>
+                    <div class="legend-item"><span class="color-box offline"></span> Offline</div>
+                    <div class="legend-item"><span class="color-box danger-zone"></span> Danger Zone</div>
+                    <div class="legend-item"><span class="color-box safe-corridor"></span> Safe Corridor</div>
+                    <div class="legend-item"><i class="fa-solid fa-tent blue-icon"></i> Assembly Point</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Page 3: Node Intel -->
+        <section id="node-intel" class="page">
+            <div class="panel full-height">
+                <div class="table-controls">
+                    <h2><i class="fa-solid fa-network-wired"></i> NODE DIRECTORY</h2>
+                    <div class="filters">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="online">Online</button>
+                        <button class="filter-btn" data-filter="degraded">Degraded</button>
+                        <button class="filter-btn" data-filter="offline">Offline</button>
+                        <input type="text" id="node-search" placeholder="Search Node ID..." class="search-input">
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table" id="node-table">
+                        <thead>
+                            <tr>
+                                <th>Node ID</th>
+                                <th>Grid Zone</th>
+                                <th>Status</th>
+                                <th>Battery %</th>
+                                <th>Last Signal</th>
+                                <th>Confidence</th>
+                                <th>Uptime</th>
+                            </tr>
+                        </thead>
+                        <tbody id="node-table-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Page: Hardware Nodes -->
+        <section id="hardware-nodes" class="page">
+            <div class="hw-layout">
+                <!-- NODE 1: Survivor Detection -->
+                <div class="panel hw-node-panel">
+                    <div class="hw-node-header">
+                        <div class="hw-icon" style="border-color:#00E5FF;color:#00E5FF;"><i class="fa-solid fa-microchip"></i></div>
+                        <div>
+                            <div class="hw-label">NODE 1 — SURVIVOR DETECTION</div>
+                            <div class="hw-id">ESP32 DevKit V1 • PIR + Ultrasonic + IMU</div>
+                            <span class="hw-conn-badge offline" id="n1-badge"><span class="hw-dot" style="background:#FF4757"></span> OFFLINE</span>
+                        </div>
+                    </div>
+                    <h3 class="hw-section-title">HARDWARE COMPONENTS</h3>
+                    <div class="hw-component-list">
+                        <div class="hw-component"><span class="comp-name"><i class="fa-solid fa-person-walking"></i> HC-SR501 — PIR Motion Sensor</span><span class="comp-status">● Active</span></div>
+                        <div class="hw-component"><span class="comp-name"><i class="fa-solid fa-ruler"></i> HC-SR04 — Ultrasonic Distance</span><span class="comp-status">● Active</span></div>
+                        <div class="hw-component"><span class="comp-name"><i class="fa-solid fa-wave-square"></i> MPU6050 — Accelerometer/Gyro</span><span class="comp-status">● Active</span></div>
+                        <div class="hw-component"><span class="comp-name"><i class="fa-solid fa-lightbulb" style="color:#00E5A0"></i> Green LED — Status Indicator</span><span class="comp-status">● Active</span></div>
+                    </div>
+                    <h3 class="hw-section-title">LIVE SENSOR READINGS</h3>
+                    <div class="hw-sensors-grid" id="n1-sensors">
+                        <div class="hw-sensor-card" id="n1-pir"><div class="sensor-name">PIR Motion</div><div class="sensor-val" id="n1-pir-val" style="color:#555">---</div><div class="sensor-delta stable" id="n1-pir-delta"><i class="fa-solid fa-minus"></i> No motion</div></div>
+                        <div class="hw-sensor-card" id="n1-dist"><div class="sensor-name">Ultrasonic Dist</div><div class="sensor-val" id="n1-dist-val" style="color:#555">---</div><div class="sensor-delta stable" id="n1-dist-delta"><i class="fa-solid fa-minus"></i> 0.0</div></div>
+                        <div class="hw-sensor-card" id="n1-accel"><div class="sensor-name">Accel (X/Y/Z)</div><div class="sensor-val" id="n1-accel-val" style="font-size:1.1rem;color:#555;">---</div><div class="sensor-delta stable" id="n1-accel-delta"><i class="fa-solid fa-minus"></i> Stable</div></div>
+                        <div class="hw-sensor-card" id="n1-led"><div class="sensor-name">LED Status</div><div class="sensor-val" id="n1-led-val" style="color:#555;">---</div><div class="sensor-delta stable"><i class="fa-solid fa-lightbulb"></i> Normal</div></div>
+                    </div>
+                    <div class="hw-chart-box">
+                        <h3>NODE 1 — DISTANCE & MOTION HISTORY (60s)</h3>
+                        <canvas id="alphaChart"></canvas>
+                    </div>
+                </div>
+                <!-- NODE 2: Hazard Monitor + Gateway -->
+                <div class="panel hw-node-panel">
+                    <div class="hw-node-header">
+                        <div class="hw-icon" style="border-color:#FF6B35;color:#FF6B35;"><i class="fa-solid fa-shield-halved"></i></div>
+                        <div>
+                            <div class="hw-label">NODE 2 — HAZARD MONITOR + GATEWAY</div>
+                            <div class="hw-id">ESP32 DevKit V1 • Gas + Temp + Flame + IMU</div>
+                            <span class="hw-conn-badge offline" id="n2-badge"><span class="hw-dot" style="background:#FF4757"></span> OFFLINE</span>
+                        </div>
+                    </div>
+                    <h3 class="hw-section-title">HARDWARE COMPONENTS</h3>
+                    <div class="hw-component-list">
+                        <div class="hw-component"><span class="comp-name"><i class="fa-solid fa-smog"></i> MQ-2 — Gas/Smoke Sensor</span><span class="comp-status">● Active</span></div>
+                        <div class="hw-component"><span class="comp-name"><i class="fa-solid fa-temperature-half"></i> DHT11 — Temp & Humidity</span><span class="comp-status">● Active</span></div>
+                        <div class="hw-component"><span class="comp-name"><i class="fa-solid fa-fire"></i> IR Flame Sensor Module</span><span class="comp-status">● Active</span></div>
+                        <div class="hw-component"><span class="comp-name"><i class="fa-solid fa-wave-square"></i> MPU6050 — Accelerometer/Gyro</span><span class="comp-status">● Active</span></div>
+                        <div class="hw-component"><span class="comp-name"><i class="fa-solid fa-lightbulb" style="color:#FF3B3B"></i> Red LED — Alert Indicator</span><span class="comp-status">● Active</span></div>
+                    </div>
+                    <h3 class="hw-section-title">LIVE SENSOR READINGS</h3>
+                    <div class="hw-sensors-grid" id="n2-sensors">
+                        <div class="hw-sensor-card" id="n2-gas"><div class="sensor-name">MQ-2 Gas/Smoke</div><div class="sensor-val" id="n2-gas-val" style="color:#555">---</div><div class="sensor-delta stable" id="n2-gas-delta"><i class="fa-solid fa-minus"></i> 0.0</div></div>
+                        <div class="hw-sensor-card" id="n2-temp"><div class="sensor-name">Temperature</div><div class="sensor-val" id="n2-temp-val" style="color:#555">---</div><div class="sensor-delta up" id="n2-temp-delta"><i class="fa-solid fa-arrow-up"></i> +0.2</div></div>
+                        <div class="hw-sensor-card" id="n2-hum"><div class="sensor-name">Humidity</div><div class="sensor-val" id="n2-hum-val" style="color:#555">---</div><div class="sensor-delta down" id="n2-hum-delta"><i class="fa-solid fa-arrow-down"></i> -0.8</div></div>
+                        <div class="hw-sensor-card" id="n2-flame"><div class="sensor-name">Flame Detected</div><div class="sensor-val" id="n2-flame-val" style="color:#555">---</div><div class="sensor-delta stable" id="n2-flame-delta"><i class="fa-solid fa-fire"></i> Clear</div></div>
+                        <div class="hw-sensor-card" id="n2-accel"><div class="sensor-name">Accel (X/Y/Z)</div><div class="sensor-val" id="n2-accel-val" style="font-size:1.1rem;color:#555;">---</div><div class="sensor-delta stable" id="n2-accel-delta"><i class="fa-solid fa-minus"></i> Stable</div></div>
+                        <div class="hw-sensor-card" id="n2-led"><div class="sensor-name">Alert LED</div><div class="sensor-val" id="n2-led-val" style="color:#555;">---</div><div class="sensor-delta stable"><i class="fa-solid fa-lightbulb"></i> Standby</div></div>
+                    </div>
+                    <div class="hw-chart-box">
+                        <h3>NODE 2 — GAS & TEMPERATURE HISTORY (60s)</h3>
+                        <canvas id="bravoChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <!-- Topology Bar -->
+            <div class="panel" style="margin-top:15px;padding:12px;">
+                <div class="hw-topology">
+                    <div class="hw-topo-node alpha"><i class="fa-solid fa-microchip"></i><br>NODE 1<br><span style="font-size:0.5rem;">SURVIVOR</span></div>
+                    <div class="hw-topo-line"></div>
+                    <div class="hw-topo-node server"><i class="fa-solid fa-tower-broadcast"></i><br>MESH</div>
+                    <div class="hw-topo-line"></div>
+                    <div class="hw-topo-node bravo"><i class="fa-solid fa-shield-halved"></i><br>NODE 2<br><span style="font-size:0.5rem;">HAZARD</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Page 4: Survivor Log -->
+        <section id="survivor-log" class="page">
+            <div class="panel full-height">
+                <div class="log-header">
+                    <h2><i class="fa-solid fa-heart-pulse"></i> DETECTED SURVIVOR SIGNALS</h2>
+                    <div class="log-stats" id="survivor-stats">
+                        37 Signals Detected — <span class="danger-text">9 High Priority</span>
+                    </div>
+                </div>
+                <div class="cards-container" id="survivor-cards-container">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Page 5: Threat Analysis -->
+        <section id="threat-analysis" class="page">
+            <div class="threat-summary-grid">
+                <div class="risk-card severe">
+                    <div class="risk-label">Overall Risk Index</div>
+                    <div class="risk-value" id="risk-index">82/100</div>
+                    <div class="risk-note">Escalated: aftershock + gas convergence</div>
+                </div>
+                <div class="risk-card elevated">
+                    <div class="risk-label">Evacuation Priority</div>
+                    <div class="risk-value">Zone B5</div>
+                    <div class="risk-note">3 survivor signals inside red perimeter</div>
+                </div>
+                <div class="risk-card stable">
+                    <div class="risk-label">Safe Corridor</div>
+                    <div class="risk-value">C2 -> A1</div>
+                    <div class="risk-note">89% mesh confidence, low smoke drift</div>
+                </div>
+                <div class="risk-card">
+                    <div class="risk-label">Forecast Window</div>
+                    <div class="risk-value">12 min</div>
+                    <div class="risk-note">Model updates every 30 seconds</div>
+                </div>
+            </div>
+            <div class="threat-main-grid">
+                <div class="panel chart-panel">
+                    <h2><i class="fa-solid fa-chart-line"></i> HAZARD FORECAST BY SIGNAL TYPE</h2>
+                    <div class="canvas-wrapper">
+                        <canvas id="threatAreaChart"></canvas>
+                    </div>
+                </div>
+                <div class="panel heatmap-panel">
+                    <h2><i class="fa-solid fa-border-all"></i> 10x10 ZONE RISK MATRIX</h2>
+                    <div class="heatmap-grid systematic" id="heatmap-grid">
+                        <!-- Populated by JS (10x10) -->
+                    </div>
+                    <div class="zone-priority-list">
+                        <div class="zone-row critical">
+                            <div class="zone-id">B5</div>
+                            <div class="zone-detail">Gas 610 ppm, structure confidence dropping, 3 survivor pings</div>
+                            <div class="zone-score">94</div>
+                        </div>
+                        <div class="zone-row critical">
+                            <div class="zone-id">C4</div>
+                            <div class="zone-detail">Thermal anomaly near blocked corridor, aftershock exposure high</div>
+                            <div class="zone-score">88</div>
+                        </div>
+                        <div class="zone-row">
+                            <div class="zone-id">D6</div>
+                            <div class="zone-detail">Smoke drift rising, route still passable via east stairwell</div>
+                            <div class="zone-score">73</div>
+                        </div>
+                        <div class="zone-row monitor">
+                            <div class="zone-id">A2</div>
+                            <div class="zone-detail">Mesh density stable, watch for packet loss from edge node N-042</div>
+                            <div class="zone-score">51</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Page 6: System Status -->
+        <section id="system-status" class="page">
+            <div class="system-grid">
+                <div class="service-metric">
+                    <div class="service-label">Mesh Backbone</div>
+                    <div class="service-value">142/158</div>
+                    <div class="service-note">16 nodes degraded or offline</div>
+                </div>
+                <div class="service-metric warning">
+                    <div class="service-label">Backhaul Links</div>
+                    <div class="service-value">2/3</div>
+                    <div class="service-note">NTN-3 in retry, failover active</div>
+                </div>
+                <div class="service-metric">
+                    <div class="service-label">Median Latency</div>
+                    <div class="service-value">184 ms</div>
+                    <div class="service-note">95th percentile: 430 ms</div>
+                </div>
+                <div class="service-metric danger">
+                    <div class="service-label">Packet Loss</div>
+                    <div class="service-value">3.8%</div>
+                    <div class="service-note">Above target in zones B/C</div>
+                </div>
+            </div>
+            
+            <div class="status-middle panel systematic">
+                <h2><i class="fa-solid fa-timeline"></i> SUBSYSTEM AVAILABILITY - LAST 60 MINUTES</h2>
+                <div class="gantt-container" id="gantt-container">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <div class="route-grid">
+                <div class="route-card">
+                    <div class="route-label">Primary Command Route</div>
+                    <div class="route-state">Healthy</div>
+                    <div class="route-note">Gateway N-001 -> Relay N-014 -> Command uplink</div>
+                </div>
+                <div class="route-card">
+                    <div class="route-label">Field Team Channel</div>
+                    <div class="route-state warning">Congested</div>
+                    <div class="route-note">Voice packets queued near District 7 south block</div>
+                </div>
+                <div class="route-card">
+                    <div class="route-label">Hardware Bridge</div>
+                    <div class="route-state">Standby</div>
+                    <div class="route-note">Simulated feed active until ESP32 bridge connects</div>
+                </div>
+            </div>
+
+            <div class="status-bottom systematic">
+                <div class="panel federated-panel">
+                    <h2><i class="fa-solid fa-brain"></i> FEDERATED MODEL SYNC</h2>
+                    <div class="fed-stats">
+                        <div class="fed-stat">
+                            <span class="fed-label">NODES SYNCED:</span>
+                            <span class="fed-value">118/142</span>
+                        </div>
+                        <div class="fed-stat">
+                            <span class="fed-label">LAST SYNC:</span>
+                            <span class="fed-value" id="last-sync-time">Just now</span>
+                        </div>
+                        <div class="fed-stat">
+                            <span class="fed-label">MODEL VER:</span>
+                            <span class="fed-value">RES-AI-v4.2.1</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" style="width: 83%;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel sys-log-panel">
+                    <h2><i class="fa-solid fa-clipboard-list"></i> SYSTEM EVENTS</h2>
+                    <div class="sys-log" id="sys-log">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+// --- CONFIGURATION & STATE ---
+const CONFIG = {
+    totalNodes: 158,
+    kochiCenter: [9.9312, 76.2673],
+    updateInterval: 2000, // ms for quick visual updates
+};
+
+const STATE = {
+    elapsedTimeSeconds: 47 * 60 + 23, // Start at T+00:47:23
+    nodes: [],
+    survivorSignals: [],
+    timelineLogs: [],
+    stats: {
+        online: 0,
+        degraded: 0,
+        offline: 0,
+        signals: 37,
+        highPriority: 9
+    }
+};
+
+// Colors for JS charts/map
+const COLORS = {
+    red: '#FF3B3B',
+    green: '#00E5A0',
+    amber: '#FFB300',
+    blue: '#1C9BE6',
+    darkPanel: 'rgba(11, 18, 33, 0.85)'
+};
+
+// --- UTILS ---
+const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const randomFloat = (min, max) => (Math.random() * (max - min) + min).toFixed(2);
+const randomChoice = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const formatTime = (totalSeconds) => {
+    const h = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+    const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+    const s = (totalSeconds % 60).toString().padStart(2, '0');
+    return `T+${h}:${m}:${s} ELAPSED`;
+};
+const getTimestamp = () => {
+    const now = new Date();
+    return `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+};
+
+// --- DATA GENERATION ---
+function generateNodes() {
+    const statuses = ['online', 'online', 'online', 'online', 'degraded', 'offline'];
+    const types = ['Acoustic', 'Thermal', 'RF Probe', 'Ultrasonic', 'None'];
+    
+    for (let i = 1; i <= CONFIG.totalNodes; i++) {
+        const status = randomChoice(statuses);
+        const hasSignal = status !== 'offline' && Math.random() > 0.5;
+        
+        STATE.nodes.push({
+            id: `N-${i.toString().padStart(3, '0')}`,
+            status: status,
+            battery: status === 'offline' ? 0 : randomInt(15, 100),
+            lat: CONFIG.kochiCenter[0] + (Math.random() - 0.5) * 0.15,
+            lng: CONFIG.kochiCenter[1] + (Math.random() - 0.5) * 0.15,
+            zone: `Grid ${randomChoice(['A','B','C','D','E','F'])}${randomInt(1, 9)}`,
+            lastSignalType: hasSignal ? randomChoice(types.filter(t=>t!=='None')) : 'None',
+            confidence: hasSignal ? randomInt(40, 98) : 0,
+            uptime: status === 'offline' ? '0h 0m' : `${randomInt(2, 47)}h ${randomInt(0, 59)}m`,
+            history: Array.from({length: 10}, () => randomInt(20, 100)) // for sparkline
+        });
+    }
+    updateStats();
+}
+
+function updateStats() {
+    STATE.stats.online = STATE.nodes.filter(n => n.status === 'online').length;
+    STATE.stats.degraded = STATE.nodes.filter(n => n.status === 'degraded').length;
+    STATE.stats.offline = STATE.nodes.filter(n => n.status === 'offline').length;
+}
+
+function generateInitialSignals() {
+    for(let i=0; i<STATE.stats.signals; i++) {
+        createNewSignal(false);
+    }
+    STATE.survivorSignals.sort((a,b) => b.confidence - a.confidence);
+}
+
+function createNewSignal(addToUI = true) {
+    const methods = ['Acoustic', 'Thermal', 'RF Probe', 'Ultrasonic'];
+    const conf = randomInt(50, 99);
+    const isHigh = conf > 85;
+    
+    const sig = {
+        id: `SIG-${randomInt(1000,9999)}`,
+        time: getTimestamp(),
+        node: `N-${randomInt(1, CONFIG.totalNodes).toString().padStart(3, '0')}`,
+        method: randomChoice(methods),
+        confidence: conf,
+        coords: `9.${randomInt(9000,9500)}, 76.${randomInt(2000,2900)}`,
+        priority: isHigh ? 'High' : (conf > 70 ? 'Medium' : 'Unconfirmed')
+    };
+    
+    STATE.survivorSignals.push(sig);
+    if(isHigh && addToUI) STATE.stats.highPriority++;
+    if(addToUI) {
+        STATE.stats.signals++;
+        STATE.survivorSignals.sort((a,b) => b.confidence - a.confidence);
+        renderSurvivorLog(); // Re-render to keep sorted
+        
+        // Add timeline event
+        addTimelineEvent(`New survivor signal detected by ${sig.node} (${sig.method}) - Conf: ${sig.confidence}%`, isHigh ? 'critical' : 'success');
+    }
+}
+
+// --- DOM UPDATES ---
+
+function updateTopTimer() {
+    STATE.elapsedTimeSeconds++;
+    document.getElementById('elapsed-timer').textContent = formatTime(STATE.elapsedTimeSeconds);
+}
+
+function updateOverviewKPIs() {
+    document.getElementById('kpi-nodes').textContent = `${STATE.stats.online + STATE.stats.degraded}/${CONFIG.totalNodes}`;
+    document.getElementById('kpi-signals').textContent = STATE.stats.signals;
+    
+    let totalBat = 0;
+    let activeCount = 0;
+    STATE.nodes.forEach(n => {
+        if(n.status !== 'offline') { totalBat += n.battery; activeCount++; }
+    });
+    document.getElementById('kpi-battery').textContent = Math.round(totalBat/activeCount) + '%';
+}
+
+function addTimelineEvent(msg, type = 'normal') {
+    const feed = document.getElementById('timeline-feed');
+    const entry = document.createElement('div');
+    entry.className = `log-entry ${type}`;
+    entry.innerHTML = `<span class="log-time">[${getTimestamp()}]</span> <span class="log-msg">${msg}</span>`;
+    
+    feed.prepend(entry);
+    if(feed.children.length > 50) feed.removeChild(feed.lastChild);
+}
+
+// --- CHARTS (Chart.js) ---
+let healthChart, signalChart, threatChart, smokeChart, seismicChart, structChart;
+
+Chart.defaults.color = COLORS.textMuted;
+Chart.defaults.font.family = "'Share Tech Mono', monospace";
+
+function initCharts() {
+    // 1. Node Health Donut
+    const ctxHealth = document.getElementById('nodeHealthChart').getContext('2d');
+    healthChart = new Chart(ctxHealth, {
+        type: 'doughnut',
+        data: {
+            labels: ['Online', 'Degraded', 'Offline'],
+            datasets: [{
+                data: [STATE.stats.online, STATE.stats.degraded, STATE.stats.offline],
+                backgroundColor: [COLORS.green, COLORS.amber, COLORS.red],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } }, cutout: '70%' }
+    });
+
+    // 2. Signal Types Bar
+    const ctxSignal = document.getElementById('signalTypeChart').getContext('2d');
+    signalChart = new Chart(ctxSignal, {
+        type: 'bar',
+        data: {
+            labels: ['Acoustic', 'Thermal', 'RF Probe', 'Ultra'],
+            datasets: [{
+                label: 'Detections',
+                data: [randomInt(10,30), randomInt(5,20), randomInt(2,15), randomInt(1,10)],
+                backgroundColor: COLORS.blue
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    // 3. Threat Area Chart
+    const ctxThreat = document.getElementById('threatAreaChart').getContext('2d');
+    const labels = Array.from({length: 20}, (_, i) => `+${i * 3}m`);
+    threatChart = new Chart(ctxThreat, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'Smoke ppm risk', data: [42,45,47,51,56,61,66,70,72,73,74,76,77,78,80,81,82,83,84,84], borderColor: COLORS.amber, backgroundColor: 'rgba(247,189,69,0.1)', fill: true, tension: 0.32 },
+                { label: 'Aftershock probability', data: [74,76,80,82,85,87,84,82,80,79,77,76,74,72,70,69,68,66,65,64], borderColor: COLORS.red, backgroundColor: 'rgba(255,95,114,0.1)', fill: true, tension: 0.32 },
+                { label: 'Structural instability', data: [58,59,61,63,66,68,69,70,72,74,75,76,77,79,80,81,82,82,83,84], borderColor: COLORS.blue, backgroundColor: 'rgba(79,179,232,0.1)', fill: true, tension: 0.32 }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            elements: { point: { radius: 0 } },
+            plugins: { legend: { position: 'bottom' } },
+            scales: {
+                y: { min: 0, max: 100, title: { display: true, text: 'Risk score', color: COLORS.textMuted } },
+                x: { title: { display: true, text: 'Forecast horizon', color: COLORS.textMuted } }
+            }
+        }
+    });
+
+    // 4. Bar Charts for Threats
+    const createMiniBar = (id, color, data) => {
+        const canvas = document.getElementById(id);
+        if(!canvas) return null;
+
+        return new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: { labels: ['A4', 'B7', 'C1', 'D9', 'E2'], datasets: [{ data: data, backgroundColor: color }] },
+            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } }
+        });
+    };
+    smokeChart = createMiniBar('smokeBarChart', COLORS.amber, [90, 85, 70, 65, 50]);
+    seismicChart = createMiniBar('seismicBarChart', COLORS.red, [95, 88, 82, 75, 60]);
+    structChart = createMiniBar('structBarChart', COLORS.blue, [85, 80, 75, 60, 55]);
+}
+
+function updateChartsSim() {
+    // Update donut
+    healthChart.data.datasets[0].data = [STATE.stats.online, STATE.stats.degraded, STATE.stats.offline];
+    healthChart.update();
+
+    // Shift area chart
+    threatChart.data.datasets.forEach(ds => {
+        ds.data.shift();
+        ds.data.push(ds.data[ds.data.length-1] + randomInt(-4, 4));
+        // clamp
+        ds.data[ds.data.length-1] = Math.max(0, Math.min(100, ds.data[ds.data.length-1]));
+    });
+    threatChart.update();
+
+    const riskIndex = document.getElementById('risk-index');
+    if(riskIndex) {
+        const latest = threatChart.data.datasets.map(ds => ds.data[ds.data.length - 1]);
+        const avg = Math.round(latest.reduce((sum, val) => sum + val, 0) / latest.length);
+        riskIndex.textContent = `${avg}/100`;
+    }
+}
+
+// --- LEAFLET MAP ---
+let map;
+let markers = [];
+
+function initMap() {
+    map = L.map('leaflet-map', {
+        zoomControl: false,
+        attributionControl: false
+    }).setView(CONFIG.kochiCenter, 13);
+
+    // Dark theme map tiles (CartoDB Dark Matter)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19
+    }).addTo(map);
+
+    // Danger Zone Polygon
+    L.polygon([
+        [9.94, 76.25], [9.95, 76.28], [9.92, 76.29], [9.91, 76.26]
+    ], { color: COLORS.red, fillColor: COLORS.red, fillOpacity: 0.1, weight: 1 }).addTo(map);
+
+    // Safe Corridor Polyline
+    L.polyline([
+        [9.90, 76.24], [9.92, 76.25], [9.94, 76.24], [9.96, 76.25]
+    ], { color: COLORS.green, dashArray: '5, 10', weight: 2 }).addTo(map);
+
+    const hardwareNodes = [
+        {
+            label: 'NODE 1',
+            className: 'node-one',
+            coords: [9.9650, 76.2420], // Fort Kochi
+            role: 'Survivor detection',
+            sensors: 'PIR, ultrasonic, IMU'
+        },
+        {
+            label: 'NODE 2',
+            className: 'node-two',
+            coords: [9.9800, 76.2750], // Marine Drive
+            role: 'Hazard monitor + gateway',
+            sensors: 'Gas, temp, flame, IMU'
+        }
+    ];
+
+    hardwareNodes.forEach(hw => {
+        const icon = L.divIcon({
+            className: '',
+            html: `<div class="node-hw-marker ${hw.className}">${hw.label}</div>`,
+            iconSize: [54, 28],
+            iconAnchor: [27, 14],
+            popupAnchor: [0, -18]
+        });
+
+        L.marker(hw.coords, { icon, zIndexOffset: 1000 }).addTo(map).bindPopup(`
+            <div style="font-family:'Share Tech Mono'; background:#070B14; color:#fff; padding:8px; min-width:180px;">
+                <strong style="color:${hw.className === 'node-one' ? COLORS.green : COLORS.amber}">${hw.label}</strong><br>
+                Role: ${hw.role}<br>
+                Sensors: ${hw.sensors}<br>
+                Link: LIVE HARDWARE / SIM
+            </div>
+        `);
+    });
+
+    // Render Markers
+    STATE.nodes.forEach(node => {
+        let color = node.status === 'online' ? COLORS.green : (node.status === 'degraded' ? COLORS.amber : COLORS.red);
+        let marker = L.circleMarker([node.lat, node.lng], {
+            radius: 4,
+            color: color,
+            fillColor: color,
+            fillOpacity: 0.8,
+            weight: 1
+        }).addTo(map);
+
+        marker.bindPopup(`
+            <div style="font-family:'Share Tech Mono'; background:#070B14; color:#fff; padding:5px;">
+                <strong style="color:${COLORS.blue}">${node.id}</strong><br>
+                Status: <span style="color:${color}">${node.status.toUpperCase()}</span><br>
+                Battery: ${node.battery}%<br>
+                Last Signal: ${node.lastSignalType}<br>
+                Grid: ${node.zone}
+            </div>
+        `);
+        markers.push(marker);
+    });
+}
+
+// --- NODE INTEL TABLE ---
+function renderNodeTable(filter = 'all', search = '') {
+    const tbody = document.getElementById('node-table-body');
+    tbody.innerHTML = '';
+    
+    let filteredNodes = STATE.nodes.filter(n => {
+        if (filter !== 'all' && n.status !== filter) return false;
+        if (search && !n.id.toLowerCase().includes(search.toLowerCase())) return false;
+        return true;
+    });
+
+    filteredNodes.forEach(node => {
+        const tr = document.createElement('tr');
+        if (node.status === 'offline') tr.className = 'row-critical';
+        
+        tr.innerHTML = `
+            <td><strong>${node.id}</strong></td>
+            <td>${node.zone}</td>
+            <td><span class="status-badge bg-${node.status}">${node.status}</span></td>
+            <td>${node.battery}%</td>
+            <td>${node.lastSignalType}</td>
+            <td>${node.confidence > 0 ? node.confidence+'%' : '-'}</td>
+            <td>${node.uptime}</td>
+        `;
+        
+        tr.addEventListener('click', () => {
+            tr.classList.toggle('expanded-row');
+            if(!tr.nextElementSibling || !tr.nextElementSibling.classList.contains('sparkline-row')) {
+                const sparkRow = document.createElement('tr');
+                sparkRow.className = 'sparkline-row';
+                sparkRow.innerHTML = `<td colspan="7">
+                    <div class="sparkline-container">
+                        <canvas id="spark-${node.id}"></canvas>
+                    </div>
+                </td>`;
+                tr.after(sparkRow);
+                
+                // Draw tiny chart
+                const ctx = document.getElementById(`spark-${node.id}`).getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: node.history.map((_,i)=>i), datasets: [{ data: node.history, borderColor: COLORS.blue, tension: 0.3, borderWidth: 2, pointRadius: 0 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins:{legend:{display:false}}, scales:{x:{display:false},y:{display:false, min:0, max:100}} }
+                });
+            } else {
+                tr.nextElementSibling.remove();
+            }
+        });
+        
+        tbody.appendChild(tr);
+    });
+}
+
+// --- SURVIVOR LOG ---
+function renderSurvivorLog() {
+    const container = document.getElementById('survivor-cards-container');
+    container.innerHTML = '';
+    
+    document.getElementById('survivor-stats').innerHTML = `${STATE.stats.signals} Signals Detected — <span class="danger-text">${STATE.stats.highPriority} High Priority</span>`;
+
+    STATE.survivorSignals.forEach(sig => {
+        const card = document.createElement('div');
+        card.className = `survivor-card priority-${sig.priority.toLowerCase()}`;
+        
+        let icon = 'fa-wave-square';
+        if(sig.method === 'Thermal') icon = 'fa-temperature-high';
+        if(sig.method === 'Acoustic') icon = 'fa-volume-high';
+
+        card.innerHTML = `
+            <div class="card-icon"><i class="fa-solid ${icon}"></i></div>
+            <div class="card-details">
+                <div class="detail-group"><span class="detail-label">SIGNAL ID</span><span class="detail-value" style="color:${COLORS.blue}">${sig.id}</span></div>
+                <div class="detail-group"><span class="detail-label">DETECTION TIME</span><span class="detail-value">${sig.time}</span></div>
+                <div class="detail-group"><span class="detail-label">NODE / GRID</span><span class="detail-value">${sig.node} / ${sig.coords}</span></div>
+                <div class="detail-group"><span class="detail-label">METHOD / CONFIDENCE</span><span class="detail-value">${sig.method} — ${sig.confidence}%</span></div>
+            </div>
+            <div class="card-status">
+                <span class="status-badge" style="border:1px solid ${sig.priority === 'High' ? COLORS.red : COLORS.amber}; color:${sig.priority === 'High' ? COLORS.red : COLORS.amber}">${sig.priority.toUpperCase()}</span>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+// --- THREAT HEATMAP ---
+function renderHeatmap() {
+    const grid = document.getElementById('heatmap-grid');
+    grid.innerHTML = '';
+    const hotZones = new Set([14, 15, 24, 25, 34, 35, 43, 44]);
+    const elevatedZones = new Set([12, 13, 16, 23, 26, 33, 36, 45, 54, 55, 64]);
+    for(let i=0; i<100; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'heatmap-cell';
+        const row = String.fromCharCode(65 + Math.floor(i / 10));
+        const col = (i % 10) + 1;
+        cell.dataset.zone = `${row}${col}`;
+
+        if(hotZones.has(i)) {
+            cell.classList.add('risk-critical');
+        } else if(elevatedZones.has(i)) {
+            cell.classList.add('risk-elevated');
+        } else if(i % 7 === 0 || i % 11 === 0) {
+            cell.classList.add('risk-watch');
+        } else {
+            cell.classList.add('risk-normal');
+        }
+        
+        grid.appendChild(cell);
+    }
+}
+function animateHeatmap() {
+    const cells = document.querySelectorAll('.heatmap-cell');
+    if(!cells.length) return;
+    const idx = randomChoice([14, 15, 24, 25, 34, 35, 43, 44, randomInt(0, 99)]);
+    const r = Math.random();
+    cells[idx].classList.remove('risk-critical', 'risk-elevated', 'risk-watch', 'risk-normal');
+    cells[idx].classList.add(r > 0.72 ? 'risk-critical' : (r > 0.45 ? 'risk-elevated' : 'risk-watch'));
+}
+
+// --- SYSTEM LOGS ---
+function addSystemLog(msg) {
+    const log = document.getElementById('sys-log');
+    log.innerHTML = `<div class="sys-log-entry"><span class="time">[${getTimestamp()}]</span> <span>${msg}</span></div>` + log.innerHTML;
+    if(log.children.length > 30) log.removeChild(log.lastChild);
+}
+
+// --- SUBSYSTEM AVAILABILITY CHART ---
+function renderGantt() {
+    const ctx = document.getElementById('gantt-container');
+    const rows = [
+        ['Mesh routing', [['healthy', 100]], '99.9%'],
+        ['NTN backhaul A', [['healthy', 100]], '100%'],
+        ['NTN backhaul B', [['degraded', 13], ['healthy', 87]], '91.4%'],
+        ['Field voice', [['healthy', 70], ['degraded', 23], ['offline', 7]], '88.2%'],
+        ['Edge inference', [['healthy', 100]], '99.7%'],
+        ['Hardware bridge', [['healthy', 60], ['degraded', 20], ['offline', 20]], '80.1%']
+    ];
+
+    ctx.innerHTML = `
+        <div class="availability-chart">
+            ${rows.map(([name, segments, score]) => `
+                <div class="availability-row">
+                    <div class="availability-name">${name}</div>
+                    <div class="availability-track">
+                        ${segments.map(([state, width]) => `<span class="availability-segment ${state}" style="width:${width}%"></span>`).join('')}
+                    </div>
+                    <div class="availability-score">${score}</div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function switchPage(targetId, clicked) {
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+
+    const nextPage = document.getElementById(targetId);
+    if(!nextPage) return;
+
+    nextPage.classList.add('active');
+    if(clicked) clicked.classList.add('active');
+    document.querySelector('.content-area')?.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if(targetId === 'mesh-map' && !map) {
+        setTimeout(initMap, 100);
+    }
+}
+
+// --- INITIALIZATION & SIMULATION LOOP ---
+let appInitialized = false;
+function init() {
+    if(appInitialized) return;
+    appInitialized = true;
+
+    generateNodes();
+    generateInitialSignals();
+    initCharts();
+    renderNodeTable();
+    renderSurvivorLog();
+    renderHeatmap();
+    renderGantt();
+    
+    addTimelineEvent('SYSTEM INITIALIZED. Awaiting telemetry...', 'normal');
+    addTimelineEvent('Connection established with 142 nodes.', 'success');
+    addSystemLog('Federated learning model RES-AI-v4.2.1 pushed to edge.');
+    addSystemLog('Backhaul NTN-3 degraded; traffic shifted to NTN-1 and NTN-2.');
+    addSystemLog('Packet loss elevated in zones B5/C4; route optimizer recalculated field channel.');
+
+    // Navigation logic
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const clicked = e.target.closest('.nav-btn');
+            switchPage(clicked.getAttribute('data-target'), clicked);
+        });
+    });
+
+    // Table Filters
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            renderNodeTable(e.target.getAttribute('data-filter'), document.getElementById('node-search').value);
+        });
+    });
+    document.getElementById('node-search').addEventListener('input', (e) => {
+        renderNodeTable(document.querySelector('.filter-btn.active').getAttribute('data-filter'), e.target.value);
+    });
+
+    // Simulation Loop
+    setInterval(() => {
+        updateTopTimer();
+        document.getElementById('last-sync-time').textContent = getTimestamp();
+    }, 1000);
+
+    setInterval(() => {
+        // Random node drops or comes back
+        if(Math.random() > 0.7) {
+            const node = randomChoice(STATE.nodes);
+            const oldStatus = node.status;
+            node.status = randomChoice(['online', 'degraded', 'offline']);
+            if(oldStatus !== node.status) {
+                updateStats();
+                updateOverviewKPIs();
+                updateChartsSim();
+                addTimelineEvent(`Node ${node.id} status changed: ${oldStatus.toUpperCase()} -> ${node.status.toUpperCase()}`, node.status === 'offline' ? 'critical' : 'warning');
+                addSystemLog(`Heartbeat monitor: ${node.id} is now ${node.status}`);
+            }
+        }
+
+        // Random new signal
+        if(Math.random() > 0.8) {
+            createNewSignal();
+        }
+
+        animateHeatmap();
+
+    }, CONFIG.updateInterval);
+
+    // --- HARDWARE NODES ---
+    initHWCharts();
+    // Start simulation initially; will be stopped when real hardware connects
+    let hwSimInterval = setInterval(updateHWSensors, 1500);
+    window._hwSimInterval = hwSimInterval;
+}
+
+// === HARDWARE NODES SIMULATION ===
+const HW_STATE = {
+    n1: { pir: false, dist: 48.3, accelX: 0.02, accelY: 0.01, accelZ: 9.81, led: true },
+    n2: { gas: 185, temp: 31.2, hum: 72, flame: false, accelX: 0.03, accelY: -0.01, accelZ: 9.79, led: false },
+    n1History: { dist: Array(30).fill(48), motion: Array(30).fill(0) },
+    n2History: { gas: Array(30).fill(185), temp: Array(30).fill(31) }
+};
+let hwAlphaChart, hwBravoChart;
+let hwLiveMode = false;  // true when real hardware is connected
+let lastHWData = { node1: 0, node2: 0 };  // timestamps of last data
+
+function initHWCharts() {
+    const labels = Array.from({length:30}, (_,i) => `${30-i}s`);
+    const ctxA = document.getElementById('alphaChart');
+    if(!ctxA) return;
+    hwAlphaChart = new Chart(ctxA.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Distance (cm)', data: [...HW_STATE.n1History.dist], borderColor: '#00E5FF', backgroundColor: 'rgba(0,229,255,0.08)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 0 },
+                { label: 'Motion', data: [...HW_STATE.n1History.motion], borderColor: '#00E5A0', backgroundColor: 'rgba(0,229,160,0.08)', fill: true, tension: 0, borderWidth: 2, pointRadius: 0, yAxisID: 'y1' }
+            ]
+        },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:10}}}},
+            scales:{ y:{min:0,max:200,title:{display:true,text:'cm',color:'#8B9BB4'}}, y1:{position:'right',min:0,max:1,title:{display:true,text:'Motion',color:'#8B9BB4'},ticks:{stepSize:1}} },
+            elements:{point:{radius:0}}
+        }
+    });
+
+    const ctxB = document.getElementById('bravoChart');
+    if(!ctxB) return;
+    hwBravoChart = new Chart(ctxB.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                { label: 'Gas (ppm)', data: [...HW_STATE.n2History.gas], borderColor: '#FFB300', backgroundColor: 'rgba(255,179,0,0.08)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 0 },
+                { label: 'Temp (°C)', data: [...HW_STATE.n2History.temp], borderColor: '#FF6B35', backgroundColor: 'rgba(255,107,53,0.08)', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 0, yAxisID: 'y1' }
+            ]
+        },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:10}}}},
+            scales:{ y:{min:0,max:600,title:{display:true,text:'ppm',color:'#8B9BB4'}}, y1:{position:'right',min:20,max:50,title:{display:true,text:'°C',color:'#8B9BB4'}} },
+            elements:{point:{radius:0}}
+        }
+    });
+}
+
+function updateSensorCard(id, value, unit, delta, deltaClass) {
+    const card = document.getElementById(id);
+    if(!card) return;
+    const valEl = card.querySelector('.sensor-val');
+    const deltaEl = card.querySelector('.sensor-delta');
+    if(valEl) {
+        valEl.innerHTML = unit ? `${value}<span class="sensor-unit">${unit}</span>` : value;
+        valEl.style.color = ''; // Reset to CSS default (white)
+    }
+    if(deltaEl && delta !== undefined) {
+        const icon = deltaClass === 'up' ? 'fa-arrow-up' : (deltaClass === 'down' ? 'fa-arrow-down' : 'fa-minus');
+        deltaEl.className = `sensor-delta ${deltaClass}`;
+        deltaEl.innerHTML = `<i class="fa-solid ${icon}"></i> ${delta}`;
+    }
+    card.classList.add('updating');
+    setTimeout(() => card.classList.remove('updating'), 600);
+}
+
+function updateHWSensors() {
+    // Guard: Don't run simulation if hardware is live or if we are explicitly offline
+    if(hwLiveMode) return;
+    
+    const s1 = HW_STATE.n1, s2 = HW_STATE.n2;
+
+    // --- Node 1: Survivor Detection ---
+    // PIR: random triggers
+    s1.pir = Math.random() > 0.7;
+    const pirCard = document.getElementById('n1-pir');
+    const pirVal = document.getElementById('n1-pir-val');
+    if(pirVal) pirVal.textContent = s1.pir ? 'MOTION!' : 'IDLE';
+    if(pirVal) pirVal.style.color = s1.pir ? '#FF3B3B' : '#00E5A0';
+    if(pirCard) { pirCard.className = `hw-sensor-card ${s1.pir ? 'critical' : ''}`; }
+    const pirDelta = document.getElementById('n1-pir-delta');
+    if(pirDelta) pirDelta.innerHTML = s1.pir ? '<i class="fa-solid fa-person-walking"></i> Detected!' : '<i class="fa-solid fa-minus"></i> No motion';
+
+    // Ultrasonic distance
+    const distDelta = (Math.random()-0.5)*8;
+    s1.dist = Math.max(2, Math.min(200, s1.dist + distDelta));
+    updateSensorCard('n1-dist', s1.dist.toFixed(1), 'cm', (distDelta>=0?'+':'')+distDelta.toFixed(1), distDelta>0.5?'up':(distDelta<-0.5?'down':'stable'));
+
+    // MPU6050 accel
+    s1.accelX = +(s1.accelX + (Math.random()-0.5)*0.04).toFixed(2);
+    s1.accelY = +(s1.accelY + (Math.random()-0.5)*0.04).toFixed(2);
+    s1.accelZ = +(9.81 + (Math.random()-0.5)*0.06).toFixed(2);
+    const accelMag1 = Math.sqrt(s1.accelX**2+s1.accelY**2+s1.accelZ**2);
+    const isShake1 = Math.abs(accelMag1 - 9.81) > 0.3;
+    const n1AccelVal = document.getElementById('n1-accel-val');
+    if(n1AccelVal) n1AccelVal.textContent = `${s1.accelX} / ${s1.accelY} / ${s1.accelZ}`;
+    const n1AccelCard = document.getElementById('n1-accel');
+    if(n1AccelCard) n1AccelCard.className = `hw-sensor-card ${isShake1?'warning':''}`;
+
+    // LED follows motion
+    s1.led = s1.pir;
+    const ledVal = document.getElementById('n1-led-val');
+    if(ledVal) { ledVal.textContent = s1.led ? 'ON' : 'OFF'; ledVal.style.color = s1.led ? '#00E5A0' : '#8B9BB4'; }
+
+    // --- Node 2: Hazard Monitor ---
+    // MQ-2 gas
+    const gasDelta = (Math.random()-0.5)*30;
+    s2.gas = Math.max(50, Math.min(600, s2.gas + gasDelta));
+    const gasHigh = s2.gas > 400;
+    updateSensorCard('n2-gas', Math.round(s2.gas), 'ppm', (gasDelta>=0?'+':'')+gasDelta.toFixed(0), gasDelta>5?'up':(gasDelta<-5?'down':'stable'));
+    const gasCard = document.getElementById('n2-gas');
+    if(gasCard) gasCard.className = `hw-sensor-card ${gasHigh?'critical':(s2.gas>250?'warning':'')}`;
+
+    // DHT11 temp
+    const tempDelta = (Math.random()-0.5)*1.2;
+    s2.temp = Math.max(18, Math.min(50, s2.temp + tempDelta));
+    updateSensorCard('n2-temp', s2.temp.toFixed(1), '°C', (tempDelta>=0?'+':'')+tempDelta.toFixed(1), tempDelta>0.2?'up':(tempDelta<-0.2?'down':'stable'));
+
+    // DHT11 humidity
+    const humDelta = (Math.random()-0.5)*3;
+    s2.hum = Math.max(30, Math.min(95, s2.hum + humDelta));
+    updateSensorCard('n2-hum', Math.round(s2.hum), '%', (humDelta>=0?'+':'')+humDelta.toFixed(1), humDelta>0.5?'up':(humDelta<-0.5?'down':'stable'));
+
+    // IR Flame
+    s2.flame = Math.random() > 0.92;
+    const flameVal = document.getElementById('n2-flame-val');
+    if(flameVal) { flameVal.textContent = s2.flame ? 'YES!' : 'NO'; flameVal.style.color = s2.flame ? '#FF3B3B' : '#00E5A0'; }
+    const flameCard = document.getElementById('n2-flame');
+    if(flameCard) flameCard.className = `hw-sensor-card ${s2.flame?'critical':''}`;
+    const flameDelta = document.getElementById('n2-flame-delta');
+    if(flameDelta) flameDelta.innerHTML = s2.flame ? '<i class="fa-solid fa-fire" style="color:#FF3B3B"></i> ALERT!' : '<i class="fa-solid fa-fire"></i> Clear';
+
+    // MPU6050 accel
+    s2.accelX = +(s2.accelX + (Math.random()-0.5)*0.04).toFixed(2);
+    s2.accelY = +(s2.accelY + (Math.random()-0.5)*0.04).toFixed(2);
+    s2.accelZ = +(9.81 + (Math.random()-0.5)*0.06).toFixed(2);
+    const n2AccelVal = document.getElementById('n2-accel-val');
+    if(n2AccelVal) n2AccelVal.textContent = `${s2.accelX} / ${s2.accelY} / ${s2.accelZ}`;
+
+    // Red LED follows gas or flame alert
+    s2.led = gasHigh || s2.flame;
+    const n2LedVal = document.getElementById('n2-led-val');
+    if(n2LedVal) { n2LedVal.textContent = s2.led ? 'ON' : 'OFF'; n2LedVal.style.color = s2.led ? '#FF3B3B' : '#8B9BB4'; }
+
+    // --- Update History Charts ---
+    HW_STATE.n1History.dist.shift(); HW_STATE.n1History.dist.push(s1.dist);
+    HW_STATE.n1History.motion.shift(); HW_STATE.n1History.motion.push(s1.pir ? 1 : 0);
+    HW_STATE.n2History.gas.shift(); HW_STATE.n2History.gas.push(s2.gas);
+    HW_STATE.n2History.temp.shift(); HW_STATE.n2History.temp.push(s2.temp);
+
+    if(hwAlphaChart) {
+        hwAlphaChart.data.datasets[0].data = [...HW_STATE.n1History.dist];
+        hwAlphaChart.data.datasets[1].data = [...HW_STATE.n1History.motion];
+        hwAlphaChart.update('none');
+    }
+    if(hwBravoChart) {
+        hwBravoChart.data.datasets[0].data = [...HW_STATE.n2History.gas];
+        hwBravoChart.data.datasets[1].data = [...HW_STATE.n2History.temp];
+        hwBravoChart.update('none');
+    }
+
+    // Timeline events for critical readings
+    if(s1.pir) addTimelineEvent('⚡ NODE 1: PIR Motion detected — possible survivor activity', 'critical');
+    if(s2.flame) addTimelineEvent('🔥 NODE 2: FLAME DETECTED — IR sensor triggered!', 'critical');
+    if(gasHigh) addTimelineEvent(`⚠ NODE 2: Gas level critical — ${Math.round(s2.gas)} ppm`, 'warning');
+}
+
+// === REAL HARDWARE CONNECTION ===
+function setNodeOffline(nodeNum) {
+    // Stop simulation when we go offline
+    if(window._hwSimInterval) { clearInterval(window._hwSimInterval); window._hwSimInterval = null; }
+    
+    const prefix = nodeNum === 1 ? 'n1' : 'n2';
+    const badge = document.getElementById(`${prefix}-badge`);
+    if(badge) {
+        badge.className = 'hw-conn-badge offline';
+        badge.innerHTML = '<span class="hw-dot" style="background:#FF4757"></span> OFFLINE';
+    }
+    // Grey out all sensor values
+    document.querySelectorAll(`#${prefix}-sensors .sensor-val`).forEach(el => {
+        el.style.color = '#555'; el.textContent = '---';
+    });
+}
+
+function connectToHardware() {
+    // Auto-enable simulation if on GitHub Pages or Vercel (where local bridge is blocked)
+    if (window.location.hostname.includes('github.io') || window.location.hostname.includes('vercel.app')) {
+        console.log('Running on Cloud Host — Enabling Simulation Fallback');
+        if (!window._hwSimInterval) {
+            window._hwSimInterval = setInterval(updateHWSensors, 1500);
+        }
+        return; // Prevent WebSocket connection attempt which causes Mixed Content errors on HTTPS
+    }
+
+    const wsHost = window.location.hostname || 'localhost';
+    try {
+        const ws = new WebSocket(`ws://${wsHost}:3001`);
+        
+        ws.onopen = () => {
+            console.log('Connected to hardware bridge');
+            // Stop simulation
+            if(window._hwSimInterval) { clearInterval(window._hwSimInterval); window._hwSimInterval = null; }
+            hwLiveMode = true;
+        };
+        
+        ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        
+        if (msg.type === 'node1') {
+            lastHWData.node1 = Date.now();
+            const badge = document.getElementById('n1-badge');
+            if(badge) {
+                badge.className = 'hw-conn-badge connected';
+                badge.innerHTML = '<span class="hw-dot"></span> ONLINE';
+            }
+            const d = msg.data;
+            const pirVal = document.getElementById('n1-pir-val');
+            if(pirVal) { pirVal.textContent = d.pir ? 'MOTION!' : 'IDLE'; pirVal.style.color = d.pir ? '#FF4757' : '#00E5A0'; }
+            const pirCard = document.getElementById('n1-pir');
+            if(pirCard) pirCard.className = `hw-sensor-card ${d.pir ? 'critical' : ''}`;
+            updateSensorCard('n1-dist', d.distance >= 0 ? d.distance.toFixed(1) : 'ERR', 'cm', '', 'stable');
+            const n1A = document.getElementById('n1-accel-val');
+            if(n1A) n1A.textContent = `${d.accelX.toFixed(2)} / ${d.accelY.toFixed(2)} / ${d.accelZ.toFixed(2)}`;
+            const lv = document.getElementById('n1-led-val');
+            if(lv) { lv.textContent = d.led ? 'ON' : 'OFF'; lv.style.color = d.led ? '#00E5A0' : '#7B8CA6'; }
+            HW_STATE.n1History.dist.shift(); HW_STATE.n1History.dist.push(d.distance >= 0 ? d.distance : 0);
+            HW_STATE.n1History.motion.shift(); HW_STATE.n1History.motion.push(d.pir ? 1 : 0);
+            if(hwAlphaChart) { hwAlphaChart.data.datasets[0].data = [...HW_STATE.n1History.dist]; hwAlphaChart.data.datasets[1].data = [...HW_STATE.n1History.motion]; hwAlphaChart.update('none'); }
+            if(d.pir) addTimelineEvent('⚡ NODE 1 [HW]: PIR Motion detected!', 'critical');
+        }
+        
+        if (msg.type === 'node2') {
+            lastHWData.node2 = Date.now();
+            const badge = document.getElementById('n2-badge');
+            if(badge) {
+                badge.className = 'hw-conn-badge connected';
+                badge.innerHTML = '<span class="hw-dot"></span> ONLINE';
+            }
+            const d = msg.data;
+            const gasHigh = d.gas > 400;
+            updateSensorCard('n2-gas', Math.round(d.gas), 'ppm', '', gasHigh ? 'up' : 'stable');
+            const gc = document.getElementById('n2-gas');
+            if(gc) gc.className = `hw-sensor-card ${gasHigh ? 'critical' : (d.gas > 250 ? 'warning' : '')}`;
+            if(d.temp > 0) updateSensorCard('n2-temp', d.temp.toFixed(1), '°C', '', 'stable');
+            if(d.humidity > 0) updateSensorCard('n2-hum', Math.round(d.humidity), '%', '', 'stable');
+            const fv = document.getElementById('n2-flame-val');
+            if(fv) { fv.textContent = d.flame ? 'YES!' : 'NO'; fv.style.color = d.flame ? '#FF4757' : '#00E5A0'; }
+            const fc = document.getElementById('n2-flame');
+            if(fc) fc.className = `hw-sensor-card ${d.flame ? 'critical' : ''}`;
+            const a2 = document.getElementById('n2-accel-val');
+            if(a2) a2.textContent = `${d.accelX.toFixed(2)} / ${d.accelY.toFixed(2)} / ${d.accelZ.toFixed(2)}`;
+            const l2 = document.getElementById('n2-led-val');
+            if(l2) { l2.textContent = d.led ? 'ON' : 'OFF'; l2.style.color = d.led ? '#FF4757' : '#7B8CA6'; }
+            HW_STATE.n2History.gas.shift(); HW_STATE.n2History.gas.push(d.gas);
+            HW_STATE.n2History.temp.shift(); HW_STATE.n2History.temp.push(d.temp > 0 ? d.temp : HW_STATE.n2History.temp[28]);
+            if(hwBravoChart) { hwBravoChart.data.datasets[0].data = [...HW_STATE.n2History.gas]; hwBravoChart.data.datasets[1].data = [...HW_STATE.n2History.temp]; hwBravoChart.update('none'); }
+            if(d.flame) addTimelineEvent('🔥 NODE 2 [HW]: FLAME DETECTED!', 'critical');
+            if(gasHigh) addTimelineEvent(`⚠ NODE 2 [HW]: Gas ${Math.round(d.gas)} ppm`, 'warning');
+        }
+    };
+    
+    ws.onclose = () => {
+        console.log('Hardware bridge disconnected. Retrying in 3s...');
+        // Only set offline if NOT on GitHub Pages or Vercel (keep simulation alive there)
+        if (!window.location.hostname.includes('github.io') && !window.location.hostname.includes('vercel.app')) {
+            document.querySelectorAll('.hw-conn-badge').forEach(b => {
+                b.innerHTML = '<span class="hw-dot" style="background:#FF4757"></span> OFFLINE';
+            });
+            setNodeOffline(1);
+            setNodeOffline(2);
+        }
+        setTimeout(connectToHardware, 3000);
+    };
+    } catch (e) {
+        console.warn('Hardware bridge connection failed or blocked:', e);
+        if (!window._hwSimInterval) {
+            window._hwSimInterval = setInterval(updateHWSensors, 1500);
+        }
+    }
+}
+
+// Check for stale data every 3 seconds
+setInterval(() => {
+    if(!hwLiveMode) return;
+    const now = Date.now();
+    if(lastHWData.node1 > 0 && now - lastHWData.node1 > 5000) setNodeOffline(1);
+    if(lastHWData.node2 > 0 && now - lastHWData.node2 > 5000) setNodeOffline(2);
+}, 3000);
+
+connectToHardware();
+
+if(document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+} else {
+    init();
+}
+    </script>
+</body>
+</html>

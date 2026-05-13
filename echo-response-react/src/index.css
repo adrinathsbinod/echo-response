@@ -1,0 +1,89 @@
+@import "tailwindcss";
+
+@theme {
+  --color-dark-ops: #070B14;
+  --color-primary-blue: #1C9BE6;
+  --color-safe-teal: #00E5A0;
+  --color-critical-red: #FF3B3B;
+  --color-warning-amber: #FFA500;
+  --color-text-gray: #C9D6E3;
+
+  --font-barlow: "Barlow Condensed", sans-serif;
+  --font-share-tech: "Share Tech Mono", monospace;
+
+  --animate-pulse-glow: pulseGlow 2s infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 5px #FF3B3B, inset 0 0 5px #FF3B3B; }
+  50% { box-shadow: 0 0 20px #FF3B3B, inset 0 0 10px #FF3B3B; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #070B14;
+  color: #C9D6E3;
+  font-family: "Share Tech Mono", monospace;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15),
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+h1, h2, h3, h4, h5, h6, .heading {
+  font-family: "Barlow Condensed", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.panel {
+  background-color: rgba(7, 11, 20, 0.8);
+  border: 1px solid rgba(28, 155, 230, 0.25);
+  box-shadow: 0 0 10px rgba(28, 155, 230, 0.1);
+  backdrop-filter: blur(4px);
+}
+
+.leaflet-container {
+  background-color: #0b111e !important;
+  font-family: "Share Tech Mono", monospace !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #070B14; 
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(28, 155, 230, 0.5); 
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(28, 155, 230, 0.8); 
+}
